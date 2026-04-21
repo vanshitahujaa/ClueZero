@@ -21,6 +21,7 @@ router = APIRouter(prefix="/session", tags=["session"])
 class OpenRequest(BaseModel):
     platform: str | None = None
     machine_hint: str | None = None
+    device_id: str | None = None
 
 
 class OpenResponse(BaseModel):
@@ -36,11 +37,15 @@ async def open_session(
 ):
     """Open a new session; revoke all prior live sessions for this user."""
     s = await sess_svc.open_session(
-        db, user.id, platform=body.platform, machine_hint=body.machine_hint
+        db,
+        user.id,
+        platform=body.platform,
+        machine_hint=body.machine_hint,
+        device_id=body.device_id,
     )
     logger.info(
-        "Session opened: user=%s session=%s platform=%s",
-        user.id, s.session_id, body.platform,
+        "Session opened: user=%s session=%s platform=%s device=%s",
+        user.id, s.session_id, body.platform, body.device_id,
     )
     from app.config import settings as cfg
     return OpenResponse(session_id=s.session_id, heartbeat_seconds=max(15, cfg.session_heartbeat_timeout // 3))

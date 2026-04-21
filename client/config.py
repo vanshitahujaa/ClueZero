@@ -14,6 +14,7 @@ import logging
 import os
 import platform
 import sys
+import uuid
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -28,9 +29,13 @@ def _executable_dir() -> Path:
     return Path(__file__).resolve().parent
 
 
+def _config_path() -> Path:
+    return _executable_dir() / "config.ini"
+
+
 def _load_ini() -> dict:
     """Read config.ini from the binary's directory (if present)."""
-    cfg_path = _executable_dir() / "config.ini"
+    cfg_path = _config_path()
     out: dict = {}
     if cfg_path.exists():
         parser = configparser.ConfigParser()
@@ -42,6 +47,26 @@ def _load_ini() -> dict:
         except Exception as exc:
             logger.warning("Failed to parse %s: %s", cfg_path, exc)
     return out
+
+
+def _persist_device_id(device_id: str) -> None:
+    """Append device_id=<uuid> to config.ini.
+
+    Appends rather than rewriting so we preserve the exact `key=value` format
+    the installer templates write — the PS1 agent on Windows parses the file
+    with strict regex that rejects spaces around `=`.
+    """
+    cfg_path = _config_path()
+    try:
+        if cfg_path.exists():
+            existing = cfg_path.read_text(encoding="utf-8")
+            suffix = "" if existing.endswith("\n") else "\n"
+            cfg_path.write_text(f"{existing}{suffix}device_id={device_id}\n", encoding="utf-8")
+        else:
+            cfg_path.write_text(f"[cluezero]\ndevice_id={device_id}\n", encoding="utf-8")
+        logger.info("Persisted new device_id=%s to %s", device_id, cfg_path)
+    except Exception as exc:
+        logger.warning("Failed to persist device_id to %s: %s — will regenerate next run", cfg_path, exc)
 
 
 load_dotenv()  # still accept env overrides for dev runs
@@ -66,6 +91,19 @@ DEFAULT_PROMPT: str = _get(
 )
 IMAGE_QUALITY: int = int(_get("IMAGE_QUALITY", "65"))
 IMAGE_MAX_RESOLUTION: int = int(_get("IMAGE_MAX_RESOLUTION", "720"))
+
+
+def _resolve_device_id() -> str:
+    """Stable per-install UUID. Generated once, persisted to config.ini next to the binary."""
+    existing = _get("DEVICE_ID", "").strip()
+    if existing:
+        return existing
+    new_id = uuid.uuid4().hex
+    _persist_device_id(new_id)
+    return new_id
+
+
+DEVICE_ID: str = _resolve_device_id()
 
 
 def log_dir() -> Path:

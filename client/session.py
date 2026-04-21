@@ -12,7 +12,7 @@ from typing import Optional
 
 import requests
 
-from config import SERVER_URL, TOKEN
+from config import DEVICE_ID, SERVER_URL, TOKEN
 
 logger = logging.getLogger("cluezero.session")
 
@@ -49,6 +49,7 @@ def open_session() -> str:
     payload = {
         "platform": platform.system(),
         "machine_hint": socket.gethostname(),
+        "device_id": DEVICE_ID,
     }
     resp = requests.post(
         f"{SERVER_URL}/session/open",

@@ -21,13 +21,33 @@ async def open_session(
     user_id: int,
     platform: str | None = None,
     machine_hint: str | None = None,
+    device_id: str | None = None,
 ) -> AgentSession:
     """
-    Open a new session for the given user, revoking any previous non-revoked sessions (LIFO).
+    Open or resume a session.
+
+    If `device_id` is provided and a live session for (user_id, device_id)
+    already exists, return it unchanged (resume — no heartbeat gap, same
+    session_id, does not revoke itself). Otherwise revoke all prior live
+    sessions for this user (LIFO) and create a new one.
     """
     now = datetime.now(timezone.utc)
 
-    # Revoke existing live sessions for this user.
+    if device_id:
+        existing_q = await session.execute(
+            select(AgentSession).where(
+                AgentSession.user_id == user_id,
+                AgentSession.device_id == device_id,
+                AgentSession.revoked_at.is_(None),
+            )
+        )
+        existing = existing_q.scalar_one_or_none()
+        if existing is not None:
+            existing.last_seen = now
+            await session.flush()
+            return existing
+
+    # Revoke all live sessions for this user (LIFO across devices).
     await session.execute(
         update(AgentSession)
         .where(AgentSession.user_id == user_id, AgentSession.revoked_at.is_(None))
@@ -41,6 +61,7 @@ async def open_session(
         last_seen=now,
         platform=platform,
         machine_hint=machine_hint,
+        device_id=device_id,
     )
     session.add(s)
     await session.flush()

@@ -48,6 +48,7 @@ class AgentSession(Base):
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     platform: Mapped[str | None] = mapped_column(String(32), nullable=True)
     machine_hint: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    device_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="sessions")
 
