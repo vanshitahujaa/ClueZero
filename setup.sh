@@ -49,9 +49,9 @@ nohup ../.venv/bin/python agent.py > agent.log 2>&1 </dev/null &
 echo ""
 echo "✅ Done! ClueZero is now silently running in the background."
 if [ "$(uname)" == "Darwin" ]; then
-    DISPLAY_HOTKEY="Cmd + Shift + O"
+    DISPLAY_HOTKEY="Cmd + Shift + Q"
 else
-    DISPLAY_HOTKEY="Ctrl + Shift + O"
+    DISPLAY_HOTKEY="Ctrl + Shift + Q"
 fi
 echo "👉 You can trigger it anytime anywhere with: $DISPLAY_HOTKEY"
 echo "👉 If you need to stop it, just run: pkill -f \"python agent.py\""
