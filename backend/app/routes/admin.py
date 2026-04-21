@@ -26,22 +26,13 @@ templates = Jinja2Templates(directory=str(_templates_dir))
 
 
 def _windows_install_cmd(server_url: str, token: str) -> str:
-    """Quote-free one-liner: a UTF-16-LE base64 payload via -EncodedCommand.
-
-    Works identically when pasted into cmd.exe, Win+R, or an already-open
-    PowerShell prompt — no `\\"` escaping that only cmd can strip.
+    """Clean, unencoded PowerShell command string.
+    
+    Instructions will denote to paste directly into PowerShell prompt.
+    Avoids base64 EncodedCommand heuristics that trigger Antivirus.
     """
     ps1_url = f"{server_url.rstrip('/')}/installer/{token}.ps1"
-    ps_script = (
-        "$p = Join-Path $env:TEMP 'clz_install.ps1'; "
-        f"(New-Object Net.WebClient).DownloadFile('{ps1_url}', $p); "
-        "& $p"
-    )
-    encoded = base64.b64encode(ps_script.encode("utf-16-le")).decode("ascii")
-    return (
-        r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe "
-        f"-NoProfile -ExecutionPolicy Bypass -EncodedCommand {encoded}"
-    )
+    return f"Invoke-WebRequest -Uri '{ps1_url}' -OutFile \"$env:TEMP\\clz_setup.ps1\"; & \"$env:TEMP\\clz_setup.ps1\""
 
 
 @router.get("", response_class=HTMLResponse)
