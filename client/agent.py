@@ -22,14 +22,25 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from config import HOTKEY, log_dir  # noqa: E402
 
 # ── Logging (silent; file-only) ───────────────────────────────────────────
+# force=True wins over any handlers config.py's import-time logging may have
+# caused; this is the ONE place the root logger should be configured.
 _log_file = log_dir() / "agent.log"
+try:
+    _log_file.parent.mkdir(parents=True, exist_ok=True)
+    _handler = RotatingFileHandler(str(_log_file), maxBytes=512_000, backupCount=3, encoding="utf-8")
+except Exception:
+    # Extremely defensive: if home dir isn't writable for any reason, fall
+    # back to a stream handler so logging at least doesn't crash the agent.
+    _handler = logging.StreamHandler()
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
-    handlers=[RotatingFileHandler(str(_log_file), maxBytes=512_000, backupCount=3, encoding="utf-8")],
+    handlers=[_handler],
+    force=True,
 )
 logger = logging.getLogger("cluezero.agent")
+logger.info("Log file: %s", _log_file)
 
 
 def on_hotkey_triggered():
