@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import logging
 from pathlib import Path
 from typing import Annotated
@@ -24,6 +25,25 @@ _templates_dir = Path(__file__).resolve().parent.parent / "templates"
 templates = Jinja2Templates(directory=str(_templates_dir))
 
 
+def _windows_install_cmd(server_url: str, token: str) -> str:
+    """Quote-free one-liner: a UTF-16-LE base64 payload via -EncodedCommand.
+
+    Works identically when pasted into cmd.exe, Win+R, or an already-open
+    PowerShell prompt — no `\\"` escaping that only cmd can strip.
+    """
+    bat_url = f"{server_url.rstrip('/')}/installer/{token}.bat"
+    ps_script = (
+        "$p = Join-Path $env:TEMP 'clz.bat'; "
+        f"(New-Object Net.WebClient).DownloadFile('{bat_url}', $p); "
+        "& $p"
+    )
+    encoded = base64.b64encode(ps_script.encode("utf-16-le")).decode("ascii")
+    return (
+        r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe "
+        f"-NoProfile -ExecutionPolicy Bypass -EncodedCommand {encoded}"
+    )
+
+
 @router.get("", response_class=HTMLResponse)
 @router.get("/", response_class=HTMLResponse)
 async def admin_index(
@@ -42,7 +62,11 @@ async def admin_index(
                 cost_usd=0, last_used=None,
             ),
         )
-        rows.append({"user": u, "usage": usage})
+        rows.append({
+            "user": u,
+            "usage": usage,
+            "win_cmd": _windows_install_cmd(settings.server_public_url, u.token),
+        })
 
     return templates.TemplateResponse(
         request=request,

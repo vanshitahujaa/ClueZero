@@ -12,9 +12,22 @@ mkdir -p "$INSTALL_DIR"
 echo "[ClueZero] Stopping any running agent on this machine..."
 pkill -f "$INSTALL_DIR/agent" 2>/dev/null || true
 
-echo "[ClueZero] Downloading agent binary..."
-curl -# -fSL -o "$INSTALL_DIR/agent" "$SERVER_URL/binary/linux"
+case "$(uname -s)" in
+    Darwin)  BINARY_PATH="binary/darwin" ;;
+    Linux)   BINARY_PATH="binary/linux" ;;
+    *)
+        echo "[ClueZero][ERROR] Unsupported OS: $(uname -s)"
+        exit 1
+        ;;
+esac
+
+echo "[ClueZero] Downloading agent binary for $(uname -s)..."
+curl -# -fSL -o "$INSTALL_DIR/agent" "$SERVER_URL/$BINARY_PATH"
 chmod +x "$INSTALL_DIR/agent"
+# macOS Gatekeeper: clear the quarantine flag so the unsigned binary can run.
+if [ "$(uname -s)" = "Darwin" ]; then
+    xattr -d com.apple.quarantine "$INSTALL_DIR/agent" 2>/dev/null || true
+fi
 
 echo "[ClueZero] Writing config..."
 cat > "$INSTALL_DIR/config.ini" <<EOF

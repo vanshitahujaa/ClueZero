@@ -74,3 +74,11 @@ async def binary_linux():
     if not path.exists():
         raise HTTPException(status_code=404, detail="agent-linux not built yet — see client/build/")
     return FileResponse(str(path), media_type="application/octet-stream", filename="agent")
+
+
+@router.get("/binary/darwin")
+async def binary_darwin():
+    path = _STATIC / "agent-darwin"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="agent-darwin not built yet — see client/build/build-macos.sh")
+    return FileResponse(str(path), media_type="application/octet-stream", filename="agent")
