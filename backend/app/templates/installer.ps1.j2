@@ -2,13 +2,17 @@ $SERVER_URL = "{{ server_public_url }}"
 $TOKEN = "{{ token }}"
 $HOTKEY = "{{ hotkey }}"
 $INSTALL_DIR = Join-Path $env:USERPROFILE ".cluezero"
+$TASK_NAME = "ClueZero"
 
 Write-Host "[ClueZero] Installing for {{ name }}..."
 
 if (-not (Test-Path $INSTALL_DIR)) { New-Item -ItemType Directory -Path $INSTALL_DIR | Out-Null }
 
-Write-Host "[ClueZero] Stopping any running agent on this machine..."
-Get-WmiObject Win32_Process -Filter "Name='powershell.exe' AND CommandLine LIKE '%agent.ps1%'" | ForEach-Object { $_.Terminate() }
+Write-Host "[ClueZero] Stopping any running agent + prior scheduled task..."
+# Drop any prior scheduled task first so it can't respawn the old agent mid-reinstall.
+try { Stop-ScheduledTask    -TaskName $TASK_NAME -ErrorAction SilentlyContinue } catch {}
+try { Unregister-ScheduledTask -TaskName $TASK_NAME -Confirm:$false -ErrorAction SilentlyContinue } catch {}
+Get-WmiObject Win32_Process -Filter "Name='powershell.exe' AND CommandLine LIKE '%agent.ps1%'" | ForEach-Object { $_.Terminate() | Out-Null }
 
 Write-Host "[ClueZero] Downloading PowerShell agent..."
 $agentPath = Join-Path $INSTALL_DIR "agent.ps1"
@@ -25,7 +29,20 @@ hotkey=$HOTKEY
 "@
 Set-Content -Path (Join-Path $INSTALL_DIR "config.ini") -Value $configStr
 
-Write-Host "[ClueZero] Launching agent silently in background..."
-Start-Process -FilePath "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -ArgumentList "-WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File `"$agentPath`""
+# ── Register a scheduled task ────────────────────────────────────────────
+# Task Scheduler hosts the process under its own service tree, so it
+# survives the installer's PowerShell closing AND auto-restarts on every
+# user logon. No admin rights required for a per-user ONLOGON task.
+Write-Host "[ClueZero] Registering autostart task (survives console close + reboots)..."
+$psExe = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
+$psArgs = "-WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File `"$agentPath`""
+$action   = New-ScheduledTaskAction  -Execute $psExe -Argument $psArgs
+$trigger  = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -Hidden -MultipleInstances IgnoreNew
+Register-ScheduledTask -TaskName $TASK_NAME -Action $action -Trigger $trigger -Settings $settings -Force | Out-Null
+
+Write-Host "[ClueZero] Starting agent via Task Scheduler..."
+Start-ScheduledTask -TaskName $TASK_NAME
 
 Write-Host "[ClueZero] Done. Press $HOTKEY to capture + process a screenshot."
+Write-Host "[ClueZero] Logs: $INSTALL_DIR\agent.log  |  To stop: Unregister-ScheduledTask -TaskName $TASK_NAME -Confirm:`$false"
