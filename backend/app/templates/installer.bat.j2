@@ -1,0 +1,34 @@
+@echo off
+setlocal DisableDelayedExpansion
+
+set SERVER_URL={{ server_public_url }}
+set TOKEN={{ token }}
+set HOTKEY={{ hotkey }}
+set INSTALL_DIR=%USERPROFILE%\.cluezero
+
+echo [ClueZero] Installing for {{ name }}...
+
+if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
+
+echo [ClueZero] Stopping any running agent on this machine...
+taskkill /F /IM agent.exe >nul 2>&1
+
+echo [ClueZero] Downloading agent binary...
+%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "(New-Object System.Net.WebClient).DownloadFile('%SERVER_URL%/binary/windows', '%INSTALL_DIR%\agent.exe')"
+if %errorlevel% neq 0 (
+    echo [ClueZero][ERROR] Failed to download agent.exe from %SERVER_URL%/binary/windows
+    exit /b 1
+)
+
+echo [ClueZero] Writing config...
+> "%INSTALL_DIR%\config.ini" (
+    echo [cluezero]
+    echo server_url=%SERVER_URL%
+    echo token=%TOKEN%
+    echo hotkey=%HOTKEY%
+)
+
+echo [ClueZero] Launching agent silently in background...
+start "" /B "%INSTALL_DIR%\agent.exe"
+
+echo [ClueZero] Done. Press %HOTKEY% to capture + process a screenshot.

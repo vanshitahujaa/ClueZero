@@ -1,0 +1,12 @@
+.env
+keys.pem
+__pycache__/
+*.pyc
+.venv/
+.build-venv/
+*.log
+.claude/
+.pytest_cache/
+client/dist/
+client/build/agent*
+backend/static/agent*

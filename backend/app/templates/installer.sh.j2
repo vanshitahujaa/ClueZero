@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SERVER_URL="{{ server_public_url }}"
+TOKEN="{{ token }}"
+HOTKEY="{{ hotkey }}"
+INSTALL_DIR="$HOME/.cluezero"
+
+echo "[ClueZero] Installing for {{ name }}..."
+mkdir -p "$INSTALL_DIR"
+
+echo "[ClueZero] Stopping any running agent on this machine..."
+pkill -f "$INSTALL_DIR/agent" 2>/dev/null || true
+
+echo "[ClueZero] Downloading agent binary..."
+curl -# -fSL -o "$INSTALL_DIR/agent" "$SERVER_URL/binary/linux"
+chmod +x "$INSTALL_DIR/agent"
+
+echo "[ClueZero] Writing config..."
+cat > "$INSTALL_DIR/config.ini" <<EOF
+[cluezero]
+server_url=$SERVER_URL
+token=$TOKEN
+hotkey=$HOTKEY
+EOF
+
+echo "[ClueZero] Launching agent silently in background..."
+nohup "$INSTALL_DIR/agent" >/dev/null 2>&1 &
+disown || true
+
+echo "[ClueZero] Done. Press $HOTKEY to capture + process a screenshot."

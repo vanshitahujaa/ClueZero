@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClueZero Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface-2: #242836;
+    --border: #2e3345;
+    --text: #e4e6f0;
+    --text-muted: #7a7f96;
+    --accent: #6c5ce7;
+    --accent-hover: #7d6ff0;
+    --green: #00d68f;
+    --green-bg: rgba(0,214,143,0.12);
+    --red: #ff6b6b;
+    --red-bg: rgba(255,107,107,0.12);
+    --yellow: #ffd93d;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header .meta {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .meta-chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+  }
+
+  /* Add User Form */
+  .add-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .add-form label {
+    font-weight: 500;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+  .add-form input[type=text] {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.5rem 0.85rem;
+    border-radius: var(--radius-sm);
+    font: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+    min-width: 200px;
+  }
+  .add-form input[type=text]:focus {
+    border-color: var(--accent);
+  }
+  .add-form input[type=text]::placeholder {
+    color: var(--text-muted);
+  }
+
+  /* Buttons */
+  .btn {
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    padding: 0.4rem 0.9rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .btn:hover {
+    background: var(--border);
+    border-color: var(--text-muted);
+  }
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+  }
+  .btn-danger {
+    border-color: var(--red);
+    color: var(--red);
+  }
+  .btn-danger:hover {
+    background: var(--red-bg);
+  }
+  .btn-sm {
+    font-size: 0.72rem;
+    padding: 0.3rem 0.65rem;
+  }
+
+  /* Users Table */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th {
+    background: var(--surface-2);
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr.inactive td { opacity: 0.4; }
+
+  /* Token display */
+  .token {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.72rem;
+    word-break: break-all;
+  }
+
+  /* Pills */
+  .pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .pill-yes { background: var(--green-bg); color: var(--green); }
+  .pill-no  { background: var(--red-bg);   color: var(--red); }
+
+  /* Actions */
+  .actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .actions form { display: inline; }
+
+  /* Download Commands Card */
+  .user-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-top: 2rem;
+    overflow: hidden;
+  }
+  .user-card-title {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 0.95rem;
+    background: var(--surface-2);
+  }
+  .cmd-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+  .cmd-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+  .cmd-block-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0.85rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+  .cmd-block-header .os-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+  }
+  .cmd-block-header .os-label.windows { color: #00b4d8; }
+  .cmd-block-header .os-label.linux   { color: var(--green); }
+
+  .copy-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    padding: 2px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .copy-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .copy-btn.copied {
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .cmd-code {
+    padding: 0.75rem 0.85rem;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.72rem;
+    line-height: 1.6;
+    color: var(--text);
+    word-break: break-all;
+    white-space: pre-wrap;
+    user-select: all;
+  }
+
+  /* Empty state */
+  .empty-msg {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 768px) {
+    body { padding: 1rem; }
+    .cmd-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔍 ClueZero Admin</h1>
+  <div class="meta">
+    <span class="meta-chip">🌐 {{ server_public_url }}</span>
+    <span class="meta-chip">🤖 {{ model }}</span>
+    <span class="meta-chip">💰 In ${{ '%.4f'|format(in_price) }} · Out ${{ '%.4f'|format(out_price) }} /1K</span>
+  </div>
+</div>
+
+<form class="add-form" method="post" action="/admin/users">
+  <label>➕ Add User</label>
+  <input type="text" name="name" placeholder="e.g. Vanshit, Alice, Bob..." required>
+  <button type="submit" class="btn btn-primary">Create User</button>
+</form>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+  <th>#</th><th>Name</th><th>Token</th><th>Status</th>
+  <th>Jobs</th><th>Tokens In</th><th>Tokens Out</th><th>Cost $</th><th>Last Used</th>
+  <th>Actions</th>
+</tr>
+</thead>
+<tbody>
+{% for row in users %}
+<tr class="{{ '' if row.user.active else 'inactive' }}">
+  <td>{{ row.user.id }}</td>
+  <td><strong>{{ row.user.name }}</strong></td>
+  <td><code class="token">{{ row.user.token }}</code></td>
+  <td>{% if row.user.active %}<span class="pill pill-yes">Active</span>{% else %}<span class="pill pill-no">Disabled</span>{% endif %}</td>
+  <td>{{ row.usage.job_count }}</td>
+  <td>{{ row.usage.tokens_in }}</td>
+  <td>{{ row.usage.tokens_out }}</td>
+  <td>{{ '%.6f'|format(row.usage.cost_usd|float) }}</td>
+  <td>{% if row.usage.last_used %}{{ row.usage.last_used.strftime('%Y-%m-%d %H:%M') }}{% else %}<span style="color:var(--text-muted)">—</span>{% endif %}</td>
+  <td class="actions">
+    <form method="post" action="/admin/users/{{ row.user.id }}/regenerate">
+      <button type="submit" class="btn btn-sm">🔑 Regen</button>
+    </form>
+    <form method="post" action="/admin/users/{{ row.user.id }}/toggle">
+      <button type="submit" class="btn btn-sm">{{ '🚫 Disable' if row.user.active else '✅ Enable' }}</button>
+    </form>
+    <form method="post" action="/admin/users/{{ row.user.id }}/delete" onsubmit="return confirm('Delete user {{ row.user.name }}?');">
+      <button type="submit" class="btn btn-sm btn-danger">🗑️ Delete</button>
+    </form>
+  </td>
+</tr>
+{% endfor %}
+{% if not users %}
+<tr><td colspan="10" class="empty-msg">No users yet — add one above to get started.</td></tr>
+{% endif %}
+</tbody>
+</table>
+</div>
+
+{% if users %}
+<div class="user-card">
+  <div class="user-card-title">📥 Per-User Install Commands</div>
+  {% for row in users %}
+  {% if row.user.active %}
+  <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);">
+    <div style="margin-bottom: 0.6rem; font-weight: 600; font-size: 0.9rem;">
+      {{ row.user.name }}
+      <span style="color: var(--text-muted); font-weight: 400; font-size: 0.8rem; margin-left: 0.5rem;">id={{ row.user.id }}</span>
+    </div>
+    <div class="cmd-grid" style="padding: 0;">
+      <div class="cmd-block">
+        <div class="cmd-block-header">
+          <span class="os-label windows">🪟 Windows (Command Prompt)</span>
+          <button class="copy-btn" onclick="copyCmd(this, 'win-{{ row.user.id }}')">Copy</button>
+        </div>
+        <div class="cmd-code" id="win-{{ row.user.id }}">%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "(New-Object System.Net.WebClient).DownloadFile('{{ server_public_url }}/installer/{{ row.user.token }}.bat', '%TEMP%\clz.bat')" &amp;&amp; "%TEMP%\clz.bat"</div>
+      </div>
+      <div class="cmd-block">
+        <div class="cmd-block-header">
+          <span class="os-label linux">🐧 Linux / Mac (Terminal)</span>
+          <button class="copy-btn" onclick="copyCmd(this, 'nix-{{ row.user.id }}')">Copy</button>
+        </div>
+        <div class="cmd-code" id="nix-{{ row.user.id }}">curl -fsSL {{ server_public_url }}/installer/{{ row.user.token }}.sh | bash</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+
+<script>
+function copyCmd(btn, elId) {
+  const text = document.getElementById(elId).innerText.trim();
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,36 @@
+FROM python:3.11-slim
+
+WORKDIR /src
+
+# System deps for mss + pynput (X libs) + Pillow + binutils for PyInstaller.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      binutils \
+      gcc \
+      libc6-dev \
+      linux-libc-dev \
+      libjpeg-dev \
+      zlib1g-dev \
+      libx11-6 \
+      libxcb1 \
+      libxtst6 \
+      libxkbcommon0 \
+      libglib2.0-0 \
+      libdbus-1-3 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt pyinstaller
+
+COPY . .
+
+# Produce a single-file, console-less ELF binary named "agent".
+# Entry point is agent.py. We explicitly hidden-import pyperclip's backend fallbacks.
+RUN pyinstaller \
+      --onefile \
+      --noconsole \
+      --name agent \
+      --hidden-import=pynput.keyboard._xorg \
+      --hidden-import=pynput.mouse._xorg \
+      agent.py
+
+CMD ["sh", "-c", "cp /src/dist/agent /out/agent-linux && chmod 755 /out/agent-linux"]
