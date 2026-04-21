@@ -361,10 +361,10 @@
     <div class="cmd-grid" style="padding: 0;">
       <div class="cmd-block">
         <div class="cmd-block-header">
-          <span class="os-label windows">🪟 Windows (Command Prompt)</span>
+          <span class="os-label windows">🪟 Windows</span>
           <button class="copy-btn" onclick="copyCmd(this, 'win-{{ row.user.id }}')">Copy</button>
         </div>
-        <div class="cmd-code" id="win-{{ row.user.id }}">%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "(New-Object System.Net.WebClient).DownloadFile('{{ server_public_url }}/installer/{{ row.user.token }}.bat', '%TEMP%\clz.bat')" &amp;&amp; "%TEMP%\clz.bat"</div>
+        <div class="cmd-code" id="win-{{ row.user.id }}">powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$t=\"$env:TEMP\clz.bat\"; (New-Object System.Net.WebClient).DownloadFile('{{ server_public_url }}/installer/{{ row.user.token }}.bat', $t); &amp; $t"</div>
       </div>
       <div class="cmd-block">
         <div class="cmd-block-header">
