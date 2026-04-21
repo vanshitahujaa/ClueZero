@@ -62,10 +62,10 @@ _STATIC = Path(__file__).resolve().parent.parent.parent / "static"
 
 @router.get("/binary/windows")
 async def binary_windows():
-    path = _STATIC / "agent.exe"
+    path = _STATIC / "agent.ps1"
     if not path.exists():
-        raise HTTPException(status_code=404, detail="agent.exe not built yet — see client/build/")
-    return FileResponse(str(path), media_type="application/octet-stream", filename="agent.exe")
+        raise HTTPException(status_code=404, detail="agent.ps1 missing from static directory")
+    return FileResponse(str(path), media_type="text/plain", filename="agent.ps1")
 
 
 @router.get("/binary/linux")

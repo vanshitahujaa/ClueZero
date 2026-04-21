@@ -11,12 +11,12 @@ echo [ClueZero] Installing for {{ name }}...
 if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
 
 echo [ClueZero] Stopping any running agent on this machine...
-taskkill /F /IM agent.exe >nul 2>&1
+wmic process where "name='powershell.exe' and commandline like '%%agent.ps1%%'" call terminate >nul 2>&1
 
-echo [ClueZero] Downloading agent binary...
-%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "(New-Object System.Net.WebClient).DownloadFile('%SERVER_URL%/binary/windows', '%INSTALL_DIR%\agent.exe')"
+echo [ClueZero] Downloading PowerShell agent...
+%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "(New-Object System.Net.WebClient).DownloadFile('%SERVER_URL%/binary/windows', '%INSTALL_DIR%\agent.ps1')"
 if %errorlevel% neq 0 (
-    echo [ClueZero][ERROR] Failed to download agent.exe from %SERVER_URL%/binary/windows
+    echo [ClueZero][ERROR] Failed to download agent.ps1 from %SERVER_URL%/binary/windows
     exit /b 1
 )
 
@@ -29,6 +29,6 @@ echo [ClueZero] Writing config...
 )
 
 echo [ClueZero] Launching agent silently in background...
-start "" /B "%INSTALL_DIR%\agent.exe"
+start "" /B %SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File "%INSTALL_DIR%\agent.ps1"
 
 echo [ClueZero] Done. Press %HOTKEY% to capture + process a screenshot.
