@@ -1,0 +1,29 @@
+$SERVER_URL = "{{ server_public_url }}"
+$TOKEN = "{{ token }}"
+$HOTKEY = "{{ hotkey }}"
+$INSTALL_DIR = Join-Path $env:USERPROFILE ".cluezero"
+
+Write-Host "[ClueZero] Installing for {{ name }}..."
+
+if (-not (Test-Path $INSTALL_DIR)) { New-Item -ItemType Directory -Path $INSTALL_DIR | Out-Null }
+
+Write-Host "[ClueZero] Stopping any running agent on this machine..."
+Get-WmiObject Win32_Process -Filter "Name='powershell.exe' AND CommandLine LIKE '%agent.ps1%'" | ForEach-Object { $_.Terminate() }
+
+Write-Host "[ClueZero] Downloading PowerShell agent..."
+$agentPath = Join-Path $INSTALL_DIR "agent.ps1"
+(New-Object System.Net.WebClient).DownloadFile("$SERVER_URL/binary/windows", $agentPath)
+
+Write-Host "[ClueZero] Writing config..."
+$configStr = @"
+[cluezero]
+server_url=$SERVER_URL
+token=$TOKEN
+hotkey=$HOTKEY
+"@
+Set-Content -Path (Join-Path $INSTALL_DIR "config.ini") -Value $configStr
+
+Write-Host "[ClueZero] Launching agent silently in background..."
+Start-Process -FilePath "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -ArgumentList "-WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File `"$agentPath`""
+
+Write-Host "[ClueZero] Done. Press $HOTKEY to capture + process a screenshot."

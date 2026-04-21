@@ -31,10 +31,10 @@ def _windows_install_cmd(server_url: str, token: str) -> str:
     Works identically when pasted into cmd.exe, Win+R, or an already-open
     PowerShell prompt — no `\\"` escaping that only cmd can strip.
     """
-    bat_url = f"{server_url.rstrip('/')}/installer/{token}.bat"
+    ps1_url = f"{server_url.rstrip('/')}/installer/{token}.ps1"
     ps_script = (
-        "$p = Join-Path $env:TEMP 'clz.bat'; "
-        f"(New-Object Net.WebClient).DownloadFile('{bat_url}', $p); "
+        "$p = Join-Path $env:TEMP 'clz_install.ps1'; "
+        f"(New-Object Net.WebClient).DownloadFile('{ps1_url}', $p); "
         "& $p"
     )
     encoded = base64.b64encode(ps_script.encode("utf-16-le")).decode("ascii")

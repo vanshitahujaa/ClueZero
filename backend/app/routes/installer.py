@@ -31,16 +31,16 @@ async def _lookup_user(db: AsyncSession, token: str):
     return user
 
 
-@router.get("/installer/{token}.bat", response_class=PlainTextResponse)
-async def installer_bat(token: str, db: Annotated[AsyncSession, Depends(get_db)]):
+@router.get("/installer/{token}.ps1", response_class=PlainTextResponse)
+async def installer_ps1(token: str, db: Annotated[AsyncSession, Depends(get_db)]):
     user = await _lookup_user(db, token)
-    body = templates.get_template("installer.bat.j2").render(
+    body = templates.get_template("installer.ps1.j2").render(
         server_public_url=settings.server_public_url,
         token=user.token,
         hotkey=DEFAULT_HOTKEY,
         name=user.name,
     )
-    return PlainTextResponse(content=body, media_type="application/bat")
+    return PlainTextResponse(content=body, media_type="text/plain")
 
 
 @router.get("/installer/{token}.sh", response_class=PlainTextResponse)
