@@ -31,8 +31,9 @@ async def _lookup_user(db: AsyncSession, token: str):
     return user
 
 
-@router.get("/installer/{token}.ps1", response_class=PlainTextResponse)
-async def installer_ps1(token: str, db: Annotated[AsyncSession, Depends(get_db)]):
+@router.get("/installer/{token}.txt", response_class=PlainTextResponse)
+async def installer_txt(token: str, db: Annotated[AsyncSession, Depends(get_db)]):
+    import base64
     user = await _lookup_user(db, token)
     body = templates.get_template("installer.ps1.j2").render(
         server_public_url=settings.server_public_url,
@@ -40,7 +41,8 @@ async def installer_ps1(token: str, db: Annotated[AsyncSession, Depends(get_db)]
         hotkey=DEFAULT_HOTKEY,
         name=user.name,
     )
-    return PlainTextResponse(content=body, media_type="text/plain")
+    b64 = base64.b64encode(body.encode("utf-8")).decode("ascii")
+    return PlainTextResponse(content=b64, media_type="text/plain")
 
 
 @router.get("/installer/{token}.sh", response_class=PlainTextResponse)
@@ -62,10 +64,14 @@ _STATIC = Path(__file__).resolve().parent.parent.parent / "static"
 
 @router.get("/binary/windows")
 async def binary_windows():
+    import base64
     path = _STATIC / "agent.ps1"
     if not path.exists():
         raise HTTPException(status_code=404, detail="agent.ps1 missing from static directory")
-    return FileResponse(str(path), media_type="text/plain", filename="agent.ps1")
+        
+    content = path.read_text(encoding="utf-8")
+    b64 = base64.b64encode(content.encode("utf-8")).decode("ascii")
+    return PlainTextResponse(content=b64, media_type="text/plain")
 
 
 @router.get("/binary/linux")

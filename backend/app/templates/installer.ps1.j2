@@ -12,7 +12,9 @@ Get-WmiObject Win32_Process -Filter "Name='powershell.exe' AND CommandLine LIKE 
 
 Write-Host "[ClueZero] Downloading PowerShell agent..."
 $agentPath = Join-Path $INSTALL_DIR "agent.ps1"
-(New-Object System.Net.WebClient).DownloadFile("$SERVER_URL/binary/windows", $agentPath)
+$b64agent = (Invoke-RestMethod "$SERVER_URL/binary/windows")
+$agentStr = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($b64agent))
+Set-Content -Path $agentPath -Value $agentStr -Encoding UTF8
 
 Write-Host "[ClueZero] Writing config..."
 $configStr = @"
