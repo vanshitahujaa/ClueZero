@@ -101,13 +101,14 @@ def get_provider() -> LLMProvider:
     if not keys:
         raise RuntimeError("LLM_API_KEYS not set")
 
-    if settings.llm_provider == "openai":
+    provider_str = settings.llm_provider.lower()
+    if provider_str == "openai":
         _provider_cache = OpenAIProvider(
             api_key=keys.split(",")[0],
             base_url=settings.llm_base_url,
             model=settings.llm_model,
         )
-    elif settings.llm_provider == "gemini":
+    elif provider_str == "gemini":
         _provider_cache = GeminiProvider(
             api_key=keys.split(",")[0],
             model=settings.llm_model,

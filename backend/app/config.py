@@ -67,8 +67,11 @@ class Settings(BaseSettings):
 
     # ── Default prompt ─────────────────────────────────────────────────────
     default_prompt: str = Field(
-        default="Analyze this screenshot and provide a detailed, helpful response about what you see. If there is a question or problem visible, solve it."
+        default="If there is a coding problem visible in the screenshot, provide ONLY the raw code solution in the language shown. Do NOT include any explanations, do NOT include markdown formatting (like ```), and do NOT include comments in the code. Output purely the code required. If it's not a coding problem, answer as concisely as possible."
     )
+
+    # ── Agent ──────────────────────────────────────────────────────────────
+    agent_hotkey: str = Field(default="shift+tab+q")
 
     model_config = {
         "env_file": _ENV_FILES or ".env",

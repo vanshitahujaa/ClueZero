@@ -21,9 +21,6 @@ router = APIRouter(tags=["installer"])
 _templates_dir = Path(__file__).resolve().parent.parent / "templates"
 templates = Jinja2Templates(directory=str(_templates_dir))
 
-DEFAULT_HOTKEY = "ctrl+shift+o"
-
-
 async def _lookup_user(db: AsyncSession, token: str):
     user = await get_user_by_token(db, token)
     if user is None or not user.active:
@@ -38,7 +35,7 @@ async def installer_txt(token: str, db: Annotated[AsyncSession, Depends(get_db)]
     body = templates.get_template("installer.ps1.j2").render(
         server_public_url=settings.server_public_url,
         token=user.token,
-        hotkey=DEFAULT_HOTKEY,
+        hotkey=settings.agent_hotkey,
         name=user.name,
     )
     b64 = base64.b64encode(body.encode("utf-8")).decode("ascii")
@@ -51,7 +48,7 @@ async def installer_sh(token: str, db: Annotated[AsyncSession, Depends(get_db)])
     body = templates.get_template("installer.sh.j2").render(
         server_public_url=settings.server_public_url,
         token=user.token,
-        hotkey=DEFAULT_HOTKEY,
+        hotkey=settings.agent_hotkey,
         name=user.name,
     )
     return PlainTextResponse(content=body, media_type="text/x-shellscript")

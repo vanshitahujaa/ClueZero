@@ -52,11 +52,12 @@ Write-Log "Config loaded: server=$serverUrl device=$deviceId token=$($token.Subs
 # Tray Icon setup
 $notifyIcon = New-Object System.Windows.Forms.NotifyIcon
 $notifyIcon.Icon = [System.Drawing.SystemIcons]::Information
-$notifyIcon.Visible = $true
+$notifyIcon.Visible = $false  # Silent; no tray icon
 $notifyIcon.Text = "ClueZero Background Agent"
 
 function Show-Toast($title, $message) {
-    $notifyIcon.ShowBalloonTip(3000, $title, $message, [System.Windows.Forms.ToolTipIcon]::Info)
+    # Disabled for silence; can be re-enabled for debugging if needed.
+    # $notifyIcon.ShowBalloonTip(3000, $title, $message, [System.Windows.Forms.ToolTipIcon]::Info)
 }
 
 $sessionId = ""
@@ -155,28 +156,80 @@ $csharp = @"
 using System;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using System.Diagnostics;
 
-public class ClueZeroHook : NativeWindow {
-    [DllImport("user32.dll")] public static extern bool RegisterHotKey(IntPtr hWnd, int id, int fsModifiers, int vlc);
-    [DllImport("user32.dll")] public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
-    
+public class ClueZeroHook : IDisposable {
+    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    private static extern IntPtr GetModuleHandle(string lpModuleName);
+
+    private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+    private const int WH_KEYBOARD_LL = 13;
+    private const int WM_KEYDOWN = 0x0100;
+    private const int WM_KEYUP = 0x0101;
+    private const int WM_SYSKEYDOWN = 0x0104;
+    private const int WM_SYSKEYUP = 0x0105;
+
+    private IntPtr _hookID = IntPtr.Zero;
+    private LowLevelKeyboardProc _proc;
+
     public Action OnTrigger;
-    
-    public ClueZeroHook(int mod, Keys k) {
-        this.CreateHandle(new CreateParams());
-        RegisterHotKey(this.Handle, 1, mod, (int)k);
+
+    private bool isShiftPressed = false;
+    private bool isTabPressed = false;
+
+    public ClueZeroHook() {
+        _proc = HookCallback;
+        _hookID = SetHook(_proc);
     }
-    
-    protected override void WndProc(ref Message m) {
-        if (m.Msg == 0x0312) { // WM_HOTKEY
-            if (OnTrigger != null) OnTrigger();
+
+    private IntPtr SetHook(LowLevelKeyboardProc proc) {
+        using (Process curProcess = Process.GetCurrentProcess())
+        using (ProcessModule curModule = curProcess.MainModule) {
+            return SetWindowsHookEx(WH_KEYBOARD_LL, proc, GetModuleHandle(curModule.ModuleName), 0);
         }
-        base.WndProc(ref m);
     }
-    
+
+    private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam) {
+        if (nCode >= 0) {
+            int vkCode = Marshal.ReadInt32(lParam);
+            Keys key = (Keys)vkCode;
+
+            if (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_SYSKEYDOWN) {
+                if (key == Keys.LShiftKey || key == Keys.RShiftKey || key == Keys.ShiftKey) isShiftPressed = true;
+                if (key == Keys.Tab) isTabPressed = true;
+                
+                if (key == Keys.Q && isShiftPressed && isTabPressed) {
+                    if (OnTrigger != null) OnTrigger();
+                }
+            }
+            else if (wParam == (IntPtr)WM_KEYUP || wParam == (IntPtr)WM_SYSKEYUP) {
+                if (key == Keys.LShiftKey || key == Keys.RShiftKey || key == Keys.ShiftKey) isShiftPressed = false;
+                if (key == Keys.Tab) isTabPressed = false;
+            }
+        }
+        return CallNextHookEx(_hookID, nCode, wParam, lParam);
+    }
+
     public void Stop() {
-        UnregisterHotKey(this.Handle, 1);
-        this.DestroyHandle();
+        if (_hookID != IntPtr.Zero) {
+            UnhookWindowsHookEx(_hookID);
+            _hookID = IntPtr.Zero;
+        }
+    }
+
+    public void Dispose() {
+        Stop();
     }
 }
 "@
@@ -185,14 +238,13 @@ Add-Type -TypeDefinition $csharp -ReferencedAssemblies System.Windows.Forms
 # Open Session to authenticate and retrieve session ID
 Open-Session
 
-# Modifiers: 2 (Ctrl) + 4 (Shift) = 6. Key: 'Q'
-$hook = New-Object ClueZeroHook(6, [System.Windows.Forms.Keys]::Q)
-
+# Initialize hook
+$hook = New-Object ClueZeroHook
 $action = [Action] { Process-Capture }
 $hook.OnTrigger = $action
 
-Write-Log "Hotkey registered (Ctrl+Shift+Q) — entering event loop"
-Show-Toast "ClueZero is Active!" "Press Ctrl+Shift+Q anytime to trigger the agent."
+Write-Log "Hotkey registered (Shift+Tab+Q) — entering event loop"
+Show-Toast "ClueZero is Active!" "Press Shift+Tab+Q anytime to trigger the agent."
 
 # Start Event Loop
 [System.Windows.Forms.Application]::Run()

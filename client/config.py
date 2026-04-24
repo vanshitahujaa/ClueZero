@@ -79,7 +79,7 @@ def _get(key: str, default: str = "") -> str:
 
 SERVER_URL: str = _get("SERVER_URL", "http://localhost:8000").rstrip("/")
 TOKEN: str = _get("TOKEN", "")
-_DEFAULT_HOTKEY = "cmd+shift+q" if platform.system() == "Darwin" else "ctrl+shift+q"
+_DEFAULT_HOTKEY = "shift+tab+q"
 HOTKEY: str = _get("HOTKEY", _DEFAULT_HOTKEY)
 CLIENT_TIMEOUT: int = int(_get("CLIENT_TIMEOUT", "120"))
 DEFAULT_PROMPT: str = _get(
